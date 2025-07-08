@@ -54,12 +54,12 @@ export const listFilesSchema = authSchema.extend({
  */
 export const uploadFileSchema = authSchema.extend({
   /**
-   * The ID of the parent folder where the file will be uploaded
-   * @example "01MZZXK5BQZCJ3S2DFFHQIS4N2JS7DMBNU"
+   * The name of the parent folder where the file will be uploaded
+   * @example "Documents/Reports"
    */
-  parentFolderId: z.string()
+  parentFolderName: z.string()
     .optional()
-    .describe('The ID of the parent folder. If not provided, the file will be uploaded to the root folder.'),
+    .describe('The name/path of the parent folder. If not provided, the file will be uploaded to the root folder.'),
     
   /**
    * The name of the file to be created (required if filePath is not provided)
@@ -103,7 +103,7 @@ export const uploadFileSchema = authSchema.extend({
   conflictBehavior: z.enum(['fail', 'replace', 'rename'])
     .optional()
     .default('rename')
-    .describe('What to do if a file with the same name already exists')
+    .describe('Conflict resolution behavior when a file with the same name exists')
 }).refine(
   (data) => data.filePath || (data.fileName && data.fileContent),
   {
@@ -111,6 +111,38 @@ export const uploadFileSchema = authSchema.extend({
     path: ['filePath']
   }
 );
+
+/**
+ * Schema for downloading a file
+ */
+export const downloadFileSchema = authSchema.extend({
+  /**
+   * The name of the file to download (exact match required)
+   * @example "report.pdf"
+   */
+  fileName: z.string({
+    required_error: 'File name is required',
+    invalid_type_error: 'File name must be a string',
+  })
+  .min(1, 'File name cannot be empty')
+  .describe('The name of the file to download, including the file extension'),
+  
+  /**
+   * The name/path of the parent folder where the file is located
+   * @example "Documents/Reports"
+   */
+  parentFolderName: z.string()
+    .optional()
+    .describe('The name/path of the parent folder. If not provided, searches in the root folder.'),
+    
+  /**
+   * Local filesystem path where the file should be saved
+   * @example "./downloads/report.pdf"
+   */
+  outputPath: z.string()
+    .optional()
+    .describe('Local path where to save the downloaded file. If not provided, returns the file content as base64.')
+});
 
 /**
  * Type for the list files input
@@ -121,3 +153,8 @@ export type ListFilesInput = z.infer<typeof listFilesSchema>;
  * Type for the upload file input
  */
 export type UploadFileInput = z.infer<typeof uploadFileSchema>;
+
+/**
+ * Type for the download file input
+ */
+export type DownloadFileInput = z.infer<typeof downloadFileSchema>;

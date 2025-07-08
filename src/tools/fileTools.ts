@@ -1,7 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { listFilesSchema, type ListFilesInput, type UploadFileInput } from '../schemas/fileSchemas.js';
-import type { DriveItem } from '../interfaces/files.js';
+import { 
+  listFilesSchema, 
+  type ListFilesInput, 
+  type UploadFileInput, 
+  downloadFileSchema, 
+  type DownloadFileInput 
+} from '../schemas/fileSchemas.js';
+import type { DriveItem, DownloadFileResponse } from '../interfaces/files.js';
 import FileService from '../services/fileService.js';
 import { Client } from '@microsoft/microsoft-graph-client';
 
@@ -89,7 +95,7 @@ export function registerFileTools(server: McpServer): void {
     'Upload a file to OneDrive/SharePoint',
     {
       accessToken: z.string().describe('Microsoft Graph API access token with Files.ReadWrite scope'),
-      parentFolderId: z.string().optional().describe('ID of the parent folder (defaults to root)'),
+      parentFolderName: z.string().optional().describe('Name/path of the parent folder (e.g., "Documents/Reports")'),
       fileName: z.string().optional().describe('Name of the file (required if filePath not provided)'),
       fileContent: z.string().optional().describe('Base64-encoded file content (required if filePath not provided)'),
       filePath: z.string().optional().describe('Local file path to upload (alternative to fileContent)'),
@@ -121,6 +127,62 @@ export function registerFileTools(server: McpServer): void {
         console.error('Error in uploadFile tool:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         throw new Error(`Failed to upload file: ${errorMessage}`);
+      }
+    }
+  );
+
+  // Register the downloadFile tool
+  server.tool(
+    'downloadFile',
+    'Download a file from OneDrive/SharePoint by name',
+    {
+      accessToken: z.string().describe('Microsoft Graph API access token with Files.Read scope'),
+      fileName: z.string().describe('Name of the file to download (including extension)'),
+      parentFolderName: z.string().optional().describe('Name/path of the parent folder (e.g., "Documents/Reports")'),
+      outputPath: z.string().optional().describe('Local path where to save the downloaded file (optional)')
+    } as const,
+    async (input: DownloadFileInput) => {
+      try {
+        const result = await fileService.downloadFile(input);
+        
+        if (result.filePath) {
+          // File was saved to disk
+          return {
+            content: [{
+              type: 'text',
+              text: `✅ File downloaded successfully!\n` +
+                    `  Name: ${result.fileName}\n` +
+                    `  Type: ${result.mimeType}\n` +
+                    `  Saved to: ${result.filePath}`
+            }],
+            metadata: {
+              fileName: result.fileName,
+              filePath: result.filePath,
+              mimeType: result.mimeType
+            }
+          };
+        } else {
+          // File content is returned as base64
+          return {
+            content: [{
+              type: 'text',
+              text: `✅ File downloaded successfully!\n` +
+                    `  Name: ${result.fileName}\n` +
+                    `  Type: ${result.mimeType}\n` +
+                    `  Size: ${formatFileSize(Buffer.from(result.content || '', 'base64').length)}`
+            }],
+            metadata: {
+              fileName: result.fileName,
+              mimeType: result.mimeType,
+              fileSize: Buffer.from(result.content || '', 'base64').length,
+              content: result.content
+            }
+          };
+        }
+      } catch (error) {
+        console.error('Error in downloadFile tool:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to download file: ${errorMessage}`);
       }
     }
   );

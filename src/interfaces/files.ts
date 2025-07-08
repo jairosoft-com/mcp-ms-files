@@ -62,10 +62,10 @@ export interface UploadFileInput {
   accessToken: string;
   
   /**
-   * The ID of the parent folder where the file will be uploaded
+   * The name of the parent folder where the file will be uploaded
    * If not provided, the file will be uploaded to the root folder
    */
-  parentFolderId?: string;
+  parentFolderName?: string;
   
   /**
    * The name of the file to be created (required if filePath is not provided)
@@ -117,4 +117,56 @@ export interface UploadFileResponse {
    * The MIME type of the file
    */
   mimeType: string;
+}
+
+/**
+ * Input parameters for downloading a file
+ */
+export interface DownloadFileInput {
+  /**
+   * Access token for authentication
+   */
+  accessToken: string;
+  
+  /**
+   * The name of the file to download (exact match required)
+   */
+  fileName: string;
+  
+  /**
+   * The name of the parent folder where the file is located
+   * If not provided, searches in the root folder
+   */
+  parentFolderName?: string;
+  
+  /**
+   * Local filesystem path where the file should be saved
+   * If not provided, the file content will be returned as base64
+   */
+  outputPath?: string;
+}
+
+/**
+ * Response from a file download operation
+ */
+export interface DownloadFileResponse {
+  /**
+   * The file content as a base64-encoded string (only if outputPath was not provided)
+   */
+  content?: string;
+  
+  /**
+   * The name of the downloaded file
+   */
+  fileName: string;
+  
+  /**
+   * The MIME type of the file
+   */
+  mimeType: string;
+  
+  /**
+   * The local filesystem path where the file was saved (only if outputPath was provided)
+   */
+  filePath?: string;
 }
