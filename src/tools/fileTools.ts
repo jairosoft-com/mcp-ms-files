@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { listFilesSchema, type ListFilesInput } from '../schemas/fileSchemas.js';
+import { z } from 'zod';
+import { listFilesSchema, type ListFilesInput, type UploadFileInput } from '../schemas/fileSchemas.js';
 import type { DriveItem } from '../interfaces/files.js';
 import FileService from '../services/fileService.js';
 import { Client } from '@microsoft/microsoft-graph-client';
@@ -78,6 +79,48 @@ export function registerFileTools(server: McpServer): void {
         console.error('Error in listFiles tool:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         throw new Error(`Failed to list files: ${errorMessage}`);
+      }
+    }
+  );
+
+  // Register the uploadFile tool with proper type safety
+  server.tool(
+    'uploadFile',
+    'Upload a file to OneDrive/SharePoint',
+    {
+      accessToken: z.string().describe('Microsoft Graph API access token with Files.ReadWrite scope'),
+      parentFolderId: z.string().optional().describe('ID of the parent folder (defaults to root)'),
+      fileName: z.string().optional().describe('Name of the file (required if filePath not provided)'),
+      fileContent: z.string().optional().describe('Base64-encoded file content (required if filePath not provided)'),
+      filePath: z.string().optional().describe('Local file path to upload (alternative to fileContent)'),
+      conflictBehavior: z.enum(['fail', 'replace', 'rename']).default('rename')
+        .describe('What to do if a file with the same name exists')
+    } as const,
+    async (input: UploadFileInput) => {
+      try {
+        const result = await fileService.uploadFile(input);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `✅ File uploaded successfully!\n` +
+                  `  Name: ${result.name}\n` +
+                  `  Size: ${formatFileSize(result.size)}\n` +
+                  `  Type: ${result.mimeType}\n` +
+                  `  URL: ${result.webUrl}`
+          }],
+          metadata: {
+            fileId: result.id,
+            webUrl: result.webUrl,
+            fileName: result.name,
+            fileSize: result.size,
+            mimeType: result.mimeType
+          }
+        };
+      } catch (error) {
+        console.error('Error in uploadFile tool:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to upload file: ${errorMessage}`);
       }
     }
   );

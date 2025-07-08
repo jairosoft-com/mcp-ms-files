@@ -50,6 +50,74 @@ export const listFilesSchema = authSchema.extend({
 });
 
 /**
+ * Schema for uploading a file
+ */
+export const uploadFileSchema = authSchema.extend({
+  /**
+   * The ID of the parent folder where the file will be uploaded
+   * @example "01MZZXK5BQZCJ3S2DFFHQIS4N2JS7DMBNU"
+   */
+  parentFolderId: z.string()
+    .optional()
+    .describe('The ID of the parent folder. If not provided, the file will be uploaded to the root folder.'),
+    
+  /**
+   * The name of the file to be created (required if filePath is not provided)
+   * @example "document.pdf"
+   */
+  fileName: z.string({
+    required_error: 'File name is required when filePath is not provided',
+    invalid_type_error: 'File name must be a string',
+  })
+  .min(1, 'File name cannot be empty')
+  .optional()
+  .describe('The name of the file to be created, including the file extension'),
+  
+  /**
+   * The file content as a base64-encoded string (alternative to filePath)
+   * @example "JVBERi0xLjMKJcTl8uXrp/Og0MTGCjMgMCBvYmoKPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCA0Nzk+PnN0cmVhbQp4nJVUXYvbMBB8..."
+   */
+  fileContent: z.string({
+    invalid_type_error: 'File content must be a base64-encoded string',
+  })
+  .min(1, 'File content cannot be empty')
+  .optional()
+  .describe('The file content as a base64-encoded string (alternative to filePath)'),
+  
+  /**
+   * The path to the local file to upload (alternative to fileContent)
+   * @example "/path/to/local/file.pdf"
+   */
+  filePath: z.string({
+    invalid_type_error: 'File path must be a string',
+  })
+  .min(1, 'File path cannot be empty')
+  .optional()
+  .describe('The path to the local file to upload (alternative to fileContent)'),
+  
+  /**
+   * Conflict behavior when a file with the same name exists
+   * @default "rename"
+   * @example "rename"
+   */
+  conflictBehavior: z.enum(['fail', 'replace', 'rename'])
+    .optional()
+    .default('rename')
+    .describe('What to do if a file with the same name already exists')
+}).refine(
+  (data) => data.filePath || (data.fileName && data.fileContent),
+  {
+    message: 'Either filePath or both fileName and fileContent must be provided',
+    path: ['filePath']
+  }
+);
+
+/**
  * Type for the list files input
  */
 export type ListFilesInput = z.infer<typeof listFilesSchema>;
+
+/**
+ * Type for the upload file input
+ */
+export type UploadFileInput = z.infer<typeof uploadFileSchema>;

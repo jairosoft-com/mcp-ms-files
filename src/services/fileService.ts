@@ -1,5 +1,7 @@
 import { Client } from '@microsoft/microsoft-graph-client';
-import { DriveItem, ListFilesResponse } from '../interfaces/files.js';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { DriveItem, ListFilesResponse, UploadFileInput, UploadFileResponse } from '../interfaces/files.js';
 import { ListFilesInput } from '../schemas/fileSchemas.js';
 
 /**
@@ -81,6 +83,102 @@ export class FileService {
       console.error('Error listing files:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       throw new Error(`Failed to list files: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Extracts the skip token from a nextLink URL
+   * @param nextLink The nextLink URL from Microsoft Graph API
+   * @returns The skip token or undefined if not found
+   */
+  private extractSkipToken(nextLink: string): string | undefined {
+    try {
+      const url = new URL(nextLink);
+      return url.searchParams.get('$skiptoken') || undefined;
+    } catch (error) {
+      console.error('Error extracting skip token:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Reads a file from the local filesystem and returns it as a base64 string
+   * @param filePath Path to the file to read
+   * @returns Base64-encoded file content and file name
+   */
+  private async readFileAsBase64(filePath: string): Promise<{ content: string; fileName: string }> {
+    try {
+      const absolutePath = path.resolve(filePath);
+      const fileName = path.basename(absolutePath);
+      const fileBuffer = await fs.readFile(absolutePath);
+      return {
+        content: fileBuffer.toString('base64'),
+        fileName
+      };
+    } catch (error) {
+      console.error('Error reading file:', error);
+      throw new Error(`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Uploads a file to OneDrive/SharePoint
+   * @param input The upload parameters including file content or file path
+   * @returns Information about the uploaded file
+   */
+  async uploadFile(input: UploadFileInput): Promise<UploadFileResponse> {
+    const { accessToken, parentFolderId, filePath, fileName: inputFileName, fileContent, conflictBehavior = 'rename' } = input;
+    const graphClient = this.getGraphClient(accessToken);
+    
+    try {
+      let finalFileName = inputFileName;
+      let finalFileContent = fileContent;
+
+      // If filePath is provided, read the file and get its content and name
+      if (filePath) {
+        const { content, fileName } = await this.readFileAsBase64(filePath);
+        finalFileContent = content;
+        finalFileName = finalFileName || fileName;
+      }
+
+      // Ensure we have both file name and content
+      if (!finalFileName) {
+        throw new Error('File name is required when filePath is not provided');
+      }
+      if (!finalFileContent) {
+        throw new Error('File content is required when filePath is not provided');
+      }
+
+      // Determine the upload URL based on whether a parent folder is specified
+      const uploadUrl = parentFolderId 
+        ? `/me/drive/items/${parentFolderId}:/${encodeURIComponent(finalFileName)}:/content`
+        : `/me/drive/root:/${encodeURIComponent(finalFileName)}:/content`;
+      
+      // Add conflict behavior to query parameters
+      const params = new URLSearchParams();
+      params.append('@microsoft.graph.conflictBehavior', conflictBehavior);
+      
+      // Convert base64 to ArrayBuffer
+      const buffer = Buffer.from(finalFileContent, 'base64');
+      
+      // Upload the file
+      const response = await graphClient
+        .api(`${uploadUrl}?${params.toString()}`)
+        .header('Content-Type', 'application/octet-stream')
+        .put(buffer);
+      
+      return {
+        id: response.id,
+        webUrl: response.webUrl,
+        name: response.name,
+        size: response.size,
+        mimeType: response.file?.mimeType || 'application/octet-stream'
+      };
+      
+    } catch (error: unknown) {
+      console.error('Error uploading file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to upload file: ${errorMessage}`);
     }
   }
 }
