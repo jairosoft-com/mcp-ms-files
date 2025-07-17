@@ -9,7 +9,18 @@
     "skipLibCheck": true,
     "outDir": "./build",
     "rootDir": "./src",
-    "declaration": true
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@services/*": ["src/services/*"]
+    }
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

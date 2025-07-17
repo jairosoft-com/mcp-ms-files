@@ -62,23 +62,34 @@ export interface UploadFileInput {
   accessToken: string;
   
   /**
-   * The name of the parent folder where the file will be uploaded
+   * The ID of the parent folder where the file will be uploaded
    * If not provided, the file will be uploaded to the root folder
+   * Takes precedence over parentFolderName if both are provided
+   */
+  parentFolderId?: string;
+  
+  /**
+   * The name of the parent folder where the file will be uploaded
+   * If neither parentFolderId nor parentFolderName is provided, the file will be uploaded to the root folder
+   * @deprecated Use parentFolderId instead for better performance
    */
   parentFolderName?: string;
   
   /**
-   * The name of the file to be created (required if filePath is not provided)
+   * The name to give the uploaded file
+   * If not provided, will use the filename from filePath or generate a unique name
    */
   fileName?: string;
   
   /**
    * The file content as a base64-encoded string (alternative to filePath)
+   * If both fileContent and filePath are provided, filePath takes precedence
    */
   fileContent?: string;
   
   /**
    * The path to the local file to upload (alternative to fileContent)
+   * If both fileContent and filePath are provided, filePath takes precedence
    */
   filePath?: string;
   
@@ -129,13 +140,19 @@ export interface DownloadFileInput {
   accessToken: string;
   
   /**
-   * The name of the file to download (exact match required)
+   * The ID of the file to download (preferred over fileName)
    */
-  fileName: string;
+  fileId?: string;
+  
+  /**
+   * The name of the file to download (required if fileId is not provided)
+   */
+  fileName?: string;
   
   /**
    * The name of the parent folder where the file is located
    * If not provided, searches in the root folder
+   * Only used if fileId is not provided
    */
   parentFolderName?: string;
   
@@ -153,7 +170,7 @@ export interface DownloadFileResponse {
   /**
    * The file content as a base64-encoded string (only if outputPath was not provided)
    */
-  content?: string;
+  content: string;
   
   /**
    * The name of the downloaded file
@@ -169,4 +186,9 @@ export interface DownloadFileResponse {
    * The local filesystem path where the file was saved (only if outputPath was provided)
    */
   filePath?: string;
+  
+  /**
+   * The size of the file in bytes
+   */
+  size: number;
 }

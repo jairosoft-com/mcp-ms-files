@@ -1,4 +1,5 @@
 import { AuthenticationError } from "../errors/authError.js";
+import { IncomingMessage } from 'http';
 
 /**
  * Interface for authentication configuration
@@ -67,6 +68,31 @@ export async function authenticate(config: AuthConfig): Promise<string> {
   }
 }
 
+/**
+ * Extracts the access token from the Authorization header
+ * @param req Incoming HTTP request
+ * @returns string | undefined The access token if found, undefined otherwise
+ */
+export function getAccessTokenFromHeader(req: IncomingMessage): string | undefined {
+  const authHeader = req.headers.authorization || '';
+  
+  if (!authHeader.toLowerCase().startsWith('bearer ')) {
+    console.log('No Bearer token found in Authorization header');
+    return undefined;
+  }
+  
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    console.log('No token found in Authorization header');
+    return undefined;
+  }
+  
+  // Only log that we found a token, not its contents
+  console.log('Found authorization token');
+  return token;
+}
+
 export default {
-  authenticate
+  authenticate,
+  getAccessTokenFromHeader
 };

@@ -6,8 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
-    "dev": "ts-node --esm src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "mcp",
@@ -20,8 +22,11 @@
   "description": "MCP Server for Microsoft Teams Chat Integration",
   "devDependencies": {
     "@types/node": "^22.16.0",
+    "@vitest/coverage-v8": "^1.6.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^1.6.0"
   },
   "dependencies": {
     "@azure/identity": "^4.10.2",
