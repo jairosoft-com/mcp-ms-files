@@ -34,6 +34,70 @@ export class FileService {
   }
 
   /**
+   * Downloads a file from OneDrive/SharePoint
+   * @param input The download parameters including file ID and optional output path
+   * @returns A promise that resolves to the download response
+   */
+  async downloadFile(input: DownloadFileInput): Promise<DownloadFileResponse> {
+    const { accessToken, fileId, outputPath, fileName } = input;
+    
+    if (!fileId) {
+      throw new Error('File ID is required for download');
+    }
+
+    const graphClient = this.getGraphClient(accessToken);
+
+    try {
+      // Get file metadata first
+      const fileItem = await graphClient
+        .api(`/me/drive/items/${fileId}`)
+        .get();
+
+      // Download file content
+      const content = await graphClient
+        .api(`/me/drive/items/${fileId}/content`)
+        .responseType('arraybuffer' as any) // Using 'any' to bypass TypeScript type checking for responseType
+        .get();
+
+      const contentBuffer = Buffer.from(content);
+      const base64Content = contentBuffer.toString('base64');
+      const finalFileName = fileName || fileItem.name;
+
+      // If output path is provided, save the file
+      if (outputPath) {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        
+        // Create directory if it doesn't exist
+        await fs.mkdir(outputPath, { recursive: true });
+        
+        const filePath = path.join(outputPath, finalFileName);
+        await fs.writeFile(filePath, contentBuffer);
+
+        return {
+          content: base64Content,
+          fileName: finalFileName,
+          mimeType: fileItem.file?.mimeType || 'application/octet-stream',
+          filePath,
+          size: contentBuffer.length
+        };
+      }
+
+      // If no output path, return the content directly
+      return {
+        content: base64Content,
+        fileName: finalFileName,
+        mimeType: fileItem.file?.mimeType || 'application/octet-stream',
+        size: contentBuffer.length,
+        filePath: undefined
+      };
+    } catch (error: any) {
+      console.error('Error downloading file:', error);
+      throw new Error(`Failed to download file: ${error.message}`);
+    }
+  }
+
+  /**
    * Lists files and folders from OneDrive/SharePoint
    * @param input The input parameters for listing files, including the access token
    * @returns A promise that resolves to the list of files and folders

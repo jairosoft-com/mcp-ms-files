@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "MCP File Service",
+    "description": "Postman collection for Microsoft Cloud Platform File Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Download File",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"outputPath\": \"C:/Downloads\",\n    \"fileName\": \"custom_name.pdf\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/files/:fileId/download",
+          "host": ["{{base_url}}"],
+          "path": ["api", "files", ":fileId", "download"],
+          "variable": [
+            {
+              "key": "fileId",
+              "value": "01ABC123XYZ456DEF789GHIJKLMNOPQRST",
+              "description": "The ID of the file to download"
+            }
+          ]
+        },
+        "description": "Download a file by its ID. The file will be saved to the specified outputPath with the given filename."
+      },
+      "response": [
+        {
+          "name": "Success Response (with outputPath)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"outputPath\": \"C:/Downloads\",\n    \"fileName\": \"report_final.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/files/01ABC123XYZ456DEF789GHIJKLMNOPQRST/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "files", "01ABC123XYZ456DEF789GHIJKLMNOPQRST", "download"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"fileName\": \"report_final.pdf\",\n        \"mimeType\": \"application/pdf\",\n        \"filePath\": \"C:/Downloads/report_final.pdf\",\n        \"message\": \"File downloaded successfully\"\n    }\n}"
+        },
+        {
+          "name": "Success Response (base64 content)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/files/01ABC123XYZ456DEF789GHIJKLMNOPQRST/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "files", "01ABC123XYZ456DEF789GHIJKLMNOPQRST", "download"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"fileName\": \"file.pdf\",\n        \"mimeType\": \"application/pdf\",\n        \"content\": \"base64_encoded_file_content_here\"\n    }\n}"
+        },
+        {
+          "name": "Error Response (File Not Found)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"outputPath\": \"C:/Downloads\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/files/invalid-file-id/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "files", "invalid-file-id", "download"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"error\",\n    \"error\": \"File not found\",\n    \"details\": \"File with ID 'invalid-file-id' not found\"\n}"
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set your environment variables here",
+          "// pm.environment.set('access_token', 'your_access_token_here');",
+          "// pm.environment.set('base_url', 'http://localhost:3000');"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "your_access_token_here",
+      "type": "string"
+    }
+  ]
+}
